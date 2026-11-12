@@ -6,9 +6,9 @@ import requests
 CONFIG = DatasetConfig.from_file("dataset_config.yml") 
 
 BASE = CONFIG.data_base_url
-DATA = Path("data")
+FILES = CONFIG.datafiles
+DATA = CONFIG.data_path
 DATA.mkdir(exist_ok=True)
-FILES = ["DPQ_L", "DEMO_L", "BMX_L", "SLQ_L", "SMQ_L", "MCQ_L"]
 
 
 def download(name: str) -> Path:

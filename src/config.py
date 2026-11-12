@@ -8,6 +8,7 @@ class DatasetConfig():
     data_path: Path
     phq_dataset: str
     phq_attributes: list[str]
+    datafiles: list[str]
     selected_attributes: dict[str, list[str]]
     missing_codes: dict[str, list[int]]
     depression_cutoffs: list[dict]

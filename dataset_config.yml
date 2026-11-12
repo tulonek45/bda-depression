@@ -4,6 +4,15 @@ data_base_url: https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/{}.xp
 # Path to store the data files
 data_path: data
 
+# Mapping of dataset names to their corresponding data files
+datafiles:
+  - DPQ_L
+  - DEMO_L
+  - BMX_L
+  - SLQ_L
+  - SMQ_L
+  - MCQ_L
+
 # The PHQ dataset and attributes to be used for depression assessment
 phq_dataset: DPQ_L
 phq_attributes:
