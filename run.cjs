@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 const SCRIPTS = {
-  download_data: 'scripts/download_data.py',
+  download_data: 'scripts.download_data',
+  analyze: 'main'
 };
 
 const VENV_DIR = '.venv';
@@ -77,10 +78,10 @@ function main() {
   }
 
   const venvPython = ensureEnvironment();
-  const scriptPath = SCRIPTS[scriptName];
+  const moduleName = SCRIPTS[scriptName];
   const extraArgs = args.slice(1);
 
-  runCommand(venvPython, [scriptPath, ...extraArgs]);
+  runCommand(venvPython, ['-m', moduleName, ...extraArgs]);
 }
 
 main();
