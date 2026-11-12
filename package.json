@@ -1,0 +1,7 @@
+{
+  "name": "bda_depression",
+  "version": "0.1.0",
+  "scripts": {
+    "download": "node run.cjs download_data"
+  }
+}
