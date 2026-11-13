@@ -4,7 +4,7 @@ const path = require('path');
 
 const SCRIPTS = {
   download_data: 'scripts.download_data',
-  analyze: 'main'
+  analyze: 'src.analysis',
 };
 
 const VENV_DIR = '.venv';
@@ -21,7 +21,7 @@ function ensureEnvironment() {
   if (!fs.existsSync(VENV_DIR)) {
     console.log(`Creating virtual environment in '${VENV_DIR}'...`);
     const pyCmd = process.platform === 'win32' ? 'python' : 'python3';
-    
+
     try {
       runCommand(pyCmd, ['-m', 'venv', VENV_DIR]);
     } catch (err) {
@@ -34,11 +34,6 @@ function ensureEnvironment() {
     VENV_DIR,
     isWin ? 'Scripts' : 'bin',
     isWin ? 'python.exe' : 'python'
-  );
-  const pipExecutable = path.join(
-    VENV_DIR,
-    isWin ? 'Scripts' : 'bin',
-    isWin ? 'pip.exe' : 'pip'
   );
 
   if (fs.existsSync('requirements.txt')) {
@@ -57,8 +52,8 @@ function ensureEnvironment() {
 
     if (needsInstall) {
       console.log('Installing/updating dependencies...');
-      runCommand(pipExecutable, ['install', '--upgrade', 'pip']);
-      runCommand(pipExecutable, ['install', '-r', 'requirements.txt']);
+      runCommand(venvPython, ['-m', 'pip', 'install', '--upgrade', 'pip']);
+      runCommand(venvPython, ['-m', 'pip', 'install', '-r', 'requirements.txt']);
 
       fs.writeFileSync(flagFile, '');
     }
