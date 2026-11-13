@@ -1,11 +1,13 @@
 from pathlib import Path
+from src.config import DatasetConfig
 
-import pandas as pd
 import requests
 
-BASE = "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/{}.xpt"
-FILES = ["DPQ_J", "DEMO_J", "BMX_J", "SLQ_J", "SMQ_J", "MCQ_J"]
-DATA = Path("data")
+CONFIG = DatasetConfig.from_file("dataset_config.yml") 
+
+BASE = CONFIG.data_base_url
+FILES = CONFIG.datafiles
+DATA = CONFIG.data_path
 DATA.mkdir(exist_ok=True)
 
 
@@ -19,8 +21,5 @@ def download(name: str) -> Path:
     return path
 
 
-def load(name: str) -> pd.DataFrame:
-    return pd.read_sas(download(name), format="xport", encoding="utf-8")
-
 if __name__ == "__main__":
-    dpq, demo, bmx, slq, smq, mcq = (load(f) for f in FILES)
+    for f in FILES: download(f)

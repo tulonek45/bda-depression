@@ -1,0 +1,92 @@
+# Base URL for downloading NHANES data files
+data_base_url: https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/{}.xpt
+
+# Path to store the data files
+data_path: data
+
+# Mapping of dataset names to their corresponding data files
+datafiles:
+  - DPQ_L
+  - DEMO_L
+  - BMX_L
+  - SLQ_L
+  - SMQ_L
+  - MCQ_L
+
+# The PHQ dataset and attributes to be used for depression assessment
+phq_dataset: DPQ_L
+phq_attributes:
+  - DPQ010
+  - DPQ020
+  - DPQ030
+  - DPQ040
+  - DPQ050
+  - DPQ060
+  - DPQ070
+  - DPQ080
+  - DPQ090
+
+# Selected attributes for each dataset
+selected_attributes:
+  DEMO_L:
+    - RIDAGEYR
+    - RIAGENDR
+    - INDFMPIR
+  BMX_L:
+    - BMXBMI
+    - BMXWAIST
+  SLQ_L:
+    - SLD012
+    - SLD013
+  SMQ_L:
+    - SMQ020
+    - SMQ040
+  MCQ_L:
+    - MCQ160B
+    - MCQ160C
+    - MCQ160E
+    - MCQ220
+
+# Refused and unknown codes apply only to these questionnaire variables.
+missing_codes:
+  SMQ020:
+    - 7
+    - 9
+  SMQ040:
+    - 7
+    - 9
+  MCQ160B:
+    - 7
+    - 9
+  MCQ160C:
+    - 7
+    - 9
+  MCQ160E:
+    - 7
+    - 9
+  MCQ220:
+    - 7
+    - 9
+
+# Cutoffs for depression severity based on PHQ scores
+depression_cutoffs:
+  - min: 0
+    max: 4
+    label: minimal
+    label_int: 0
+  - min: 5
+    max: 9
+    label: mild
+    label_int: 1
+  - min: 10
+    max: 14
+    label: moderate
+    label_int: 2
+  - min: 15
+    max: 19
+    label: moderately severe
+    label_int: 3
+  - min: 20
+    max: 27
+    label: severe
+    label_int: 4
