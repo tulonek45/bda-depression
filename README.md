@@ -37,17 +37,22 @@ From the repository root with the virtual environment active:
 python -m src.prior_checks
 ```
 
-### Data Contract (`src/models.py`)
+This compiles `M0`–`M2`, saves prior density plots to
+`outputs/preliz_prior_predictive.png`, and prints the implied prior prevalence
+`P(y = 1)`.
 
-### Modeling Interface & Data Contract
+### Modeling Interface & Data Contract (`src/models.py`)
 
-`build_model(model_name, df)` expects a preprocessed `pandas.DataFrame`
+`build_model(model_name, df)` compiles a Bayesian Bernoulli logistic regression
+model (`"M0"`, `"M1"`, or `"M2"`) and expects a preprocessed `pandas.DataFrame`
 containing:
 
-- **Outcome:** `y` (or `depression_status_int`) coded as integers `0`–`4` (PHQ-9
-  clinical severity categories).
+- **Outcome:** `y` (or `depression_status_int` / `depression_binary`) coded as
+  binary integers `0` (`not_depressed`) or `1` (`depressed`, PHQ-9 clinical
+  cutoff).
 - **Controls (`M0`):** `age_z`, `gender_female`, `income_z`.
 - **Habit Predictors (`M1`):** `vigorous_act`, `sedentary_z`, `alcohol_z`,
-  `sleep_c` (centered at 7.5h), `smoking_former`, `smoking_current`.
-- **Grouping (`M2`):** `age_group` (planned update to `stratum_psu` or 5-year
-  age bands in follow-up).
+  `sleep_c` (centered at 7.5h; quadratic `I(sleep_c ** 2)` is built
+  automatically), `smoking_former`, `smoking_current`.
+- **Grouping (`M2`):** `stratum_psu` (unique survey cluster ID combining
+  `SDMVSTRA` and `SDMVPSU` from `DEMO_L`).
