@@ -8,3 +8,4 @@ pymc
 bambi
 arviz
 matplotlib
+preliz
