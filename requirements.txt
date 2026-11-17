@@ -3,3 +3,9 @@ numpy
 requests
 PyYAML
 dataclasses
+scipy
+pymc
+bambi
+arviz
+matplotlib
+preliz
