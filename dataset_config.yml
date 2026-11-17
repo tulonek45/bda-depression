@@ -32,6 +32,8 @@ selected_attributes:
     - RIDAGEYR
     - RIAGENDR
     - INDFMPIR
+    - SDMVSTRA
+    - SDMVPSU
   BMX_L:
     - BMXBMI
     - BMXWAIST
@@ -71,22 +73,10 @@ missing_codes:
 # Cutoffs for depression severity based on PHQ scores
 depression_cutoffs:
   - min: 0
-    max: 4
-    label: minimal
-    label_int: 0
-  - min: 5
     max: 9
-    label: mild
-    label_int: 1
+    label: not_depressed
+    label_int: 0
   - min: 10
-    max: 14
-    label: moderate
-    label_int: 2
-  - min: 15
-    max: 19
-    label: moderately severe
-    label_int: 3
-  - min: 20
     max: 27
-    label: severe
-    label_int: 4
+    label: depressed
+    label_int: 1
