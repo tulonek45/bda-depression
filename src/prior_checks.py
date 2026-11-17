@@ -13,13 +13,6 @@ from src.models import MODELS, build_model, generate_synthetic_covariates
 Running prior checks.
 
 """
-CATEGORIES = [
-    "0: Minimal (0-4)",
-    "1: Mild (5-9)",
-    "2: Moderate (10-14)",
-    "3: Mod. Severe (15-19)",
-    "4: Severe (20-27)",
-]
 
 # Plot probability density curves for the priors, image to PDF format
 def plot_prior_densities(out_dir: Path) -> None:
@@ -37,7 +30,7 @@ def plot_prior_densities(out_dir: Path) -> None:
     axes[1].set_title("Quadratic Sleep I (sleep_c**2)\nNormal(0, 0.1)")
 
     prior_hier_sd.plot_pdf(ax=axes[2])
-    axes[2].set_title("Age-Group SD (1|age_group)\nExponential(1)")
+    axes[2].set_title("Cluster SD (1 | stratum_psu)\nExponential(1)")
 
     # save and plot
     plt.tight_layout()
@@ -54,26 +47,24 @@ def run_prior_checks() -> None:
     out_dir = Path("outputs")
     plot_prior_densities(out_dir)
 
-    # create the synthetic data
-    df_syn = generate_synthetic_covariates(n=1000, seed=42)
+    # TODO: swap for preprocessed data
+    df_base = generate_synthetic_covariates(n=1000, seed=42)
+
+    # blind to real depression outcomes while using real NHANES covariates X
+    df_x = df_base.drop(
+        columns=["y", "depression_binary", "depression_status_int", "phq_score"],
+        errors="ignore",
+    ).copy()
+    # dummy "y" binary values to satisfy Bambi builder
+    df_x["y"] = np.arange(len(df_x)) % 2
 
     # sample from priors of each model
-    for model_name in MODELS:
-        model = build_model(model_name, df_syn)
-        model.build()
-        # print model to check "threshold" priors created by Bambi
-        print(f"\n BUILT MODEL: {model_name}")
-        print(model)
-
-        # sample from priors
-        prior_idata = model.prior_predictive(draws=500, random_seed=42)
-        y_prior = prior_idata.prior_predictive["y"].values[0]
-
-        print(f"\nSIMULATED PHQ-9 ({model_name}):")
-        for k, label in enumerate(CATEGORIES):
-            shares = (y_prior == k).mean(axis=1)
-            low, high = np.percentile(shares, [5, 95])
-            print(f"  {label:<24} mean={shares.mean():.3f}  [90% CI: {low:.3f}, {high:.3f}]")
+    for name in MODELS:
+        model = build_model(name, df_x)
+        idata = model.prior_predictive(draws=500, random_seed=42)
+        sim_prev = idata.prior_predictive["y"].values.mean(axis=-1).ravel()
+        lo, hi = np.quantile(sim_prev, [0.05, 0.95])
+        print(f"{name}: mean prior P(y=1) = {sim_prev.mean():.3f} (90% CI: [{lo:.3f}, {hi:.3f}])")
 
 if __name__ == "__main__":
     run_prior_checks()
