@@ -13,6 +13,8 @@ class DatasetConfig():
     selected_attributes: dict[str, list[str]]
     missing_codes: dict[str, list[int]]
     depression_cutoffs: list[dict]
+    alcohol_days_per_year: dict[int, float]
+    numeric_columns: list[str]
 
     def __post_init__(self):
         self.data_path = Path(self.data_path)

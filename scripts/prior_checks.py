@@ -9,10 +9,7 @@ import preliz as pz
 
 from src.models import MODELS, build_model, generate_synthetic_covariates
 
-"""
-Running prior checks.
-
-"""
+"""Run prior predictive checks for the configured models."""
 
 # Plot probability density curves for the priors, image to PDF format
 def plot_prior_densities(out_dir: Path) -> None:
@@ -47,10 +44,9 @@ def run_prior_checks() -> None:
     out_dir = Path("outputs")
     plot_prior_densities(out_dir)
 
-    # TODO: swap for preprocessed data
+    # Prior predictive checks use synthetic covariates, not observed outcomes.
     df_base = generate_synthetic_covariates(n=1000, seed=42)
 
-    # blind to real depression outcomes while using real NHANES covariates X
     df_x = df_base.drop(
         columns=["y", "depression_binary", "depression_status_int", "phq_score"],
         errors="ignore",

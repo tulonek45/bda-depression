@@ -12,6 +12,8 @@ datafiles:
   - SLQ_L
   - SMQ_L
   - MCQ_L
+  - ALQ_L
+  - PAQ_L
 
 # The PHQ dataset and attributes to be used for depression assessment
 phq_dataset: DPQ_L
@@ -48,6 +50,14 @@ selected_attributes:
     - MCQ160C
     - MCQ160E
     - MCQ220
+  ALQ_L:
+    - ALQ111
+    - ALQ121
+    - ALQ130
+  PAQ_L:
+    - PAD810Q
+    - PAD810U
+    - PAD680
 
 # Refused and unknown codes apply only to these questionnaire variables.
 missing_codes:
@@ -69,6 +79,21 @@ missing_codes:
   MCQ220:
     - 7
     - 9
+  ALQ111:
+    - 7
+    - 9
+  ALQ121:
+    - 77
+    - 99
+  ALQ130:
+    - 777
+    - 999
+  PAD810Q:
+    - 7777
+    - 9999
+  PAD680:
+    - 7777
+    - 9999
 
 # Cutoffs for depression severity based on PHQ scores
 depression_cutoffs:
@@ -80,3 +105,31 @@ depression_cutoffs:
     max: 27
     label: depressed
     label_int: 1
+
+# Map ALQ121 response codes to representative drinking days per year
+alcohol_days_per_year:
+  0: 0
+  1: 365
+  2: 312
+  3: 182
+  4: 104
+  5: 52
+  6: 30
+  7: 12
+  8: 9
+  9: 4.5
+  10: 1.5
+
+numeric_columns:
+  - depression_status_int
+  - RIDAGEYR
+  - RIAGENDR
+  - INDFMPIR
+  - sleep_hours
+  - vigorous_act
+  - sedentary_minutes
+  - alcohol_drinks_week
+  - smoking_former
+  - smoking_current
+  - SDMVSTRA
+  - SDMVPSU
