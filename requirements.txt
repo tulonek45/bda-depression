@@ -10,3 +10,4 @@ arviz
 matplotlib
 preliz
 h5netcdf
+h5py
