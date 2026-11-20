@@ -40,7 +40,7 @@ def analyze(draws: int = 1000, tune: int = 1000, chains: int = 4) -> None:
             draws=draws,
             tune=tune,
             chains=chains,
-            cores=cores,
+            cores=1,
             random_seed=42,
             target_accept=0.9,
             idata_kwargs={"log_likelihood": True},
