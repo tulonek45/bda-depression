@@ -6,9 +6,6 @@ const SCRIPTS = {
   download_data: 'scripts.download_data',
   analyze: 'src.analysis',
   prior_checks: 'scripts.prior_checks',
-  evaluate: 'src.evaluation',
-  plot_evaluation: 'src.plot_evaluation',
-  report_evaluation: 'src.report_evaluation',
 };
 
 const VENV_DIR = '.venv';

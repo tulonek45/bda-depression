@@ -9,4 +9,3 @@ bambi
 arviz
 matplotlib
 preliz
-h5netcdf
