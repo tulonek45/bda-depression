@@ -73,3 +73,32 @@ preprocessed modeling frame from the configured NHANES files:
 The models currently do not apply NHANES sample weights; their posterior
 summaries and model comparisons should not be interpreted as population-
 representative estimates.
+
+### Running model evaluation and evaluation plotting 
+
+From the repository root:
+
+```bash
+npm run evaluate
+npm run plot-evaluation
+```
+
+The evaluation of the models is done in two parts. First part runs the model evaluation and the second part creates plots of the evaluation. 
+
+#### What is evaluated
+
+1. **Convergence:** R-hat, bulk and tail ESS, divergent transitions and
+   maximum tree depth hits for every parameter. Targets: R-hat ≤ 1.01,
+   ESS ≥ 400, no divergences.
+2. **Posterior predictive checks:** the observed depression rate is compared
+   with rates in data replicated from the posterior, overall, by habit subgroup
+   (smoking, vigorous activity, sleep, alcohol) and by survey cluster
+   (`stratum_psu`). The between-cluster spread of the rate shows whether the
+   cluster effects in M2 are needed.
+3. **Predictive performance:** PSIS-LOO (`az.loo`, `az.compare`) for each model
+   and for a rate-only baseline. Pairwise differences answer: M0 vs baseline
+   (do the controls predict?), M1 vs M0 (do living habits add predictive
+   value?) and M2 vs M1 (do survey clusters add predictive value?).
+4. **Prior sensitivity:** M1 and M2 are refit with every prior scale multiplied
+   by 0.5 and 2, and the posterior means are compared.
+
