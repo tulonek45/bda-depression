@@ -8,6 +8,7 @@ if not hasattr(pm, "compile_pymc"):
 import preliz as pz
 
 from src.config import DatasetConfig, CONFIG_PATH
+from src.evaluation_io import FIGURE_DIR
 from src.load import load_df, prepare_df, prepare_model_df
 from src.models import MODELS, build_model
 
@@ -46,8 +47,7 @@ def run_prior_checks() -> None:
     df = prepare_df(load_df(config), config)
     model_df = prepare_model_df(df, config)
 
-    out_dir = Path("figures")
-    plot_prior_densities(out_dir)
+    plot_prior_densities(FIGURE_DIR)
 
     # sample from priors of each model
     for name in MODELS:
