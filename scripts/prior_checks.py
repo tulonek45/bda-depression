@@ -7,7 +7,10 @@ if not hasattr(pm, "compile_pymc"):
     pm.compile_pymc = None
 import preliz as pz
 
-from src.models import MODELS, build_model, generate_synthetic_covariates
+from src.config import DatasetConfig, CONFIG_PATH
+from src.evaluation_io import FIGURE_DIR
+from src.load import load_df, prepare_df, prepare_model_df
+from src.models import MODELS, build_model
 
 """Run prior predictive checks for the configured models."""
 
@@ -40,23 +43,15 @@ def plot_prior_densities(out_dir: Path) -> None:
 
 
 def run_prior_checks() -> None:
-    # first plot the priors
-    out_dir = Path("outputs")
-    plot_prior_densities(out_dir)
+    config = DatasetConfig.from_file(CONFIG_PATH)
+    df = prepare_df(load_df(config), config)
+    model_df = prepare_model_df(df, config)
 
-    # Prior predictive checks use synthetic covariates, not observed outcomes.
-    df_base = generate_synthetic_covariates(n=1000, seed=42)
-
-    df_x = df_base.drop(
-        columns=["y", "depression_binary", "depression_status_int", "phq_score"],
-        errors="ignore",
-    ).copy()
-    # dummy "y" binary values to satisfy Bambi builder
-    df_x["y"] = np.arange(len(df_x)) % 2
+    plot_prior_densities(FIGURE_DIR)
 
     # sample from priors of each model
     for name in MODELS:
-        model = build_model(name, df_x)
+        model = build_model(name, model_df)
         idata = model.prior_predictive(draws=500, random_seed=42)
         sim_prev = idata.prior_predictive["y"].values.mean(axis=-1).ravel()
         lo, hi = np.quantile(sim_prev, [0.05, 0.95])

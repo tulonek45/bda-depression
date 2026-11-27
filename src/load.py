@@ -1,5 +1,5 @@
 from pathlib import Path
-from src.config import DatasetConfig
+from src.config import DatasetConfig, CONFIG_PATH
 import pandas as pd
 
 

@@ -1,17 +1,15 @@
-"""Collect the evaluation tables of src/evaluation.py into summary.md.
-
-    npm run report-evaluation
-"""
+"""Collect the evaluation tables into summary.md."""
 import pandas as pd
+from pathlib import Path
 
-from src.evaluation_io import OUT_DIR, TABLE_DIR
+from src.evaluation_io import TABLE_DIR, SUMMARY_PATH
 
 
 def section(title: str, table: pd.DataFrame, note: str = "") -> str:
     return f"## {title}\n\n{note}\n\n```\n{table.to_string(index=False)}\n```\n"
 
 
-def main() -> None:
+def report_evaluation(include_sensitivity: bool = True) -> None:
     read = lambda name: pd.read_csv(TABLE_DIR / f"{name}.csv")
     rates = read("ppc_rates")
 
@@ -33,7 +31,7 @@ def main() -> None:
                 "Clear when |elpd_diff| > 4 and > 2 SE. M1 - M0: do habits help? M2 - M1: do clusters help?"),
         section("3. az.compare", read("model_comparison").rename(columns={"Unnamed: 0": "model"})),
     ]
-    if (TABLE_DIR / "prior_sensitivity.csv").exists():
+    if include_sensitivity:
         sens = read("prior_sensitivity")
         base = sens[sens["prior_scale"] == 1].set_index(["model", "term"])
         sens["shift_in_sd"] = [(r["mean"] - base.loc[(r["model"], r["term"]), "mean"])
@@ -44,9 +42,5 @@ def main() -> None:
                              "Shifts above about 0.5 posterior SD are worth discussing."))
 
     text = "\n".join(parts)
-    (OUT_DIR / "summary.md").write_text(text)
+    SUMMARY_PATH.write_text(text)
     print(text)
-
-
-if __name__ == "__main__":
-    main()

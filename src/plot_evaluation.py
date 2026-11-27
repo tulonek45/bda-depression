@@ -1,7 +1,4 @@
-"""Evaluation figures from the cached fits and the tables of src/evaluation.py.
-
-    npm run plot-evaluation
-"""
+"""Evaluation figures from the cached fits and evaluation tables."""
 import arviz as az
 import matplotlib
 
@@ -26,7 +23,7 @@ def plot_ppc(name: str, rates: pd.DataFrame) -> None:
     subgroups = rates[rates["variable"] != "cluster"].reset_index(drop=True)
     clusters = rates[rates["variable"] == "cluster"].sort_values("observed").reset_index(drop=True)
 
-    fig, (left, right) = plt.subplots(1, 2, figsize=(14, 5.5))
+    fig, (left, right) = plt.subplots(1, 2, figsize=(14, 5.5), constrained_layout=True)
     pos = np.arange(len(subgroups))[::-1]
     left.hlines(pos, subgroups["rep_q05"], subgroups["rep_q95"], color="0.6", lw=3, label="replicated 90%")
     left.plot(subgroups["observed"], pos, "o", color="black", label="observed")
@@ -42,7 +39,6 @@ def plot_ppc(name: str, rates: pd.DataFrame) -> None:
     right.set_title(f"Survey clusters ({clusters['outside_90'].sum()}/{len(clusters)} outside 90%)")
 
     fig.suptitle(f"{name}: posterior predictive checks")
-    fig.tight_layout()
     fig.savefig(FIGURE_DIR / f"ppc_{name}.png", dpi=120)
     plt.close(fig)
 
@@ -50,7 +46,7 @@ def plot_ppc(name: str, rates: pd.DataFrame) -> None:
 def plot_sensitivity(sens: pd.DataFrame) -> None:
     for name, table in sens.groupby("model"):
         terms = table.loc[table["prior_scale"] == 1, "term"].tolist()
-        fig, ax = plt.subplots(figsize=(7, 0.45 * len(terms) + 1.5))
+        fig, ax = plt.subplots(figsize=(7, 0.45 * len(terms) + 1.5), constrained_layout=True)
         for offset, (scale, group) in zip([-0.2, 0, 0.2], table.groupby("prior_scale")):
             group = group.set_index("term").loc[terms]
             pos = np.arange(len(terms))[::-1] + offset
@@ -60,12 +56,11 @@ def plot_sensitivity(sens: pd.DataFrame) -> None:
         ax.set_xlabel("posterior mean ± sd (log-odds)")
         ax.set_title(f"{name}: prior sensitivity")
         ax.legend()
-        fig.tight_layout()
         fig.savefig(FIGURE_DIR / f"prior_sensitivity_{name}.png", dpi=120)
         plt.close(fig)
 
 
-def main() -> None:
+def plot_evaluation(include_sensitivity: bool = True) -> None:
     FIGURE_DIR.mkdir(parents=True, exist_ok=True)
     rates = pd.read_csv(TABLE_DIR / "ppc_rates.csv")
     for name in MODELS:
@@ -73,13 +68,11 @@ def main() -> None:
         plot_ppc(name, rates)
 
     comparison = pd.read_csv(TABLE_DIR / "model_comparison.csv", index_col=0)
-    az.plot_compare(comparison).savefig(FIGURE_DIR / "model_comparison.png")
+    pc = az.plot_compare(comparison)
+    pc.savefig(FIGURE_DIR / "model_comparison.png", dpi=120, bbox_inches="tight")
+    plt.close("all")
 
     sensitivity_path = TABLE_DIR / "prior_sensitivity.csv"
-    if sensitivity_path.exists():
+    if include_sensitivity:
         plot_sensitivity(pd.read_csv(sensitivity_path))
     print(f"Figures written to {FIGURE_DIR}/")
-
-
-if __name__ == "__main__":
-    main()

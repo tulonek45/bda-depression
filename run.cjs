@@ -4,11 +4,9 @@ const path = require('path');
 
 const SCRIPTS = {
   download_data: 'scripts.download_data',
-  analyze: 'src.analysis',
+  analyze: 'scripts.analyze',
   prior_checks: 'scripts.prior_checks',
-  evaluate: 'src.evaluation',
-  plot_evaluation: 'src.plot_evaluation',
-  report_evaluation: 'src.report_evaluation',
+  evaluate: 'scripts.evaluate',
 };
 
 const VENV_DIR = '.venv';
