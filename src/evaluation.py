@@ -1,28 +1,19 @@
 """Model evaluation: fits M0-M2 (or loads cached fits) and writes result tables.
 
-    npm run evaluate
-    npm run evaluate -- --refit               # resample instead of using cached fits
-    npm run evaluate -- --skip-sensitivity    # skip the prior sensitivity refits
-    npm run evaluate -- --draws 300 --tune 300
-
 1. Convergence: R-hat, bulk/tail ESS, divergences, max tree depth hits.
 2. Posterior predictive checks: depression rate overall, by habit subgroup and
    by survey cluster, compared with data replicated from the posterior.
 3. PSIS-LOO for each model and a rate-only baseline, pairwise differences and
    az.compare.
 4. Prior sensitivity: M1 and M2 refit with every prior scale x0.5 and x2.
-
-Run with --refit after changing the data or the models: cached fits are
-always reused otherwise.
 """
-import argparse
 
 import arviz as az
 import bambi as bmb
 import numpy as np
 import pandas as pd
 
-from src.config import DatasetConfig
+from src.config import DatasetConfig, CONFIG_PATH
 from src.evaluation_io import IDATA_DIR, TABLE_DIR
 from src.load import load_df, prepare_df, prepare_model_df
 from src.models import MODELS, get_priors, prepare_bambi_df
@@ -34,7 +25,7 @@ SENSITIVITY_MODELS = ("M1", "M2")
 
 
 def load_data() -> pd.DataFrame:
-    config = DatasetConfig.from_file("dataset_config.yml")
+    config = DatasetConfig.from_file(CONFIG_PATH)
     return prepare_model_df(prepare_df(load_df(config), config), config).reset_index(drop=True)
 
 
@@ -193,20 +184,7 @@ def sensitivity(name: str, df: pd.DataFrame, base, args) -> pd.DataFrame:
     return pd.concat(tables)
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--draws", type=int, default=1000)
-    parser.add_argument("--tune", type=int, default=1000)
-    parser.add_argument("--chains", type=int, default=4)
-    # Parallel chains crash on some macOS setups, so chains run sequentially by default.
-    parser.add_argument("--cores", type=int, default=1)
-    parser.add_argument("--refit", action="store_true")
-    parser.add_argument("--skip-sensitivity", action="store_true")
-    return parser.parse_args()
-
-
-def main() -> None:
-    args = parse_args()
+def evaluate(args) -> None:
     TABLE_DIR.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(SEED)
     df = load_data()
@@ -239,7 +217,3 @@ def main() -> None:
         pd.concat(sens).to_csv(TABLE_DIR / "prior_sensitivity.csv", index=False)
 
     print(f"Tables written to {TABLE_DIR}/")
-
-
-if __name__ == "__main__":
-    main()

@@ -2,12 +2,9 @@ from pathlib import Path
 import multiprocessing
 import arviz as az
 
-from src.config import DatasetConfig
+from src.config import DatasetConfig, CONFIG_PATH
 from src.load import load_df, prepare_df, prepare_model_df
 from src.models import MODELS, build_model
-
-
-CONFIG_PATH = Path("dataset_config.yml")
 
 
 def analyze(draws: int = 1000, tune: int = 1000, chains: int = 4) -> None:

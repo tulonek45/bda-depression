@@ -1,9 +1,9 @@
 from pathlib import Path
-from src.config import DatasetConfig
+from src.config import DatasetConfig, CONFIG_PATH
 
 import requests
 
-CONFIG = DatasetConfig.from_file("dataset_config.yml") 
+CONFIG = DatasetConfig.from_file(CONFIG_PATH) 
 
 BASE = CONFIG.data_base_url
 FILES = CONFIG.datafiles

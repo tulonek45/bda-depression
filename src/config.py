@@ -3,6 +3,8 @@ from pathlib import Path
 import yaml
 from dataclasses import dataclass
 
+CONFIG_PATH = Path("dataset_config.yml")
+
 @dataclass
 class DatasetConfig():
     data_base_url: str
