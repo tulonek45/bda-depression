@@ -12,6 +12,8 @@ import arviz as az
 import bambi as bmb
 import numpy as np
 import pandas as pd
+from scipy.stats import rankdata
+from scipy.optimize import minimize
 
 from src.config import DatasetConfig, CONFIG_PATH
 from src.evaluation_io import IDATA_DIR, TABLE_DIR
@@ -21,7 +23,7 @@ from src.models import MODELS, get_priors, prepare_bambi_df
 SEED = 42
 PPC_DRAWS = 1000
 PRIOR_SCALES = (0.5, 2.0)
-SENSITIVITY_MODELS = list(MODELS.keys() - {"M0"})  # set difference on dict_keys works in Python 3
+SENSITIVITY_MODELS = list(MODELS)
 
 
 def load_data() -> pd.DataFrame:
@@ -174,6 +176,24 @@ def pairwise(elpd: dict, a: str, b: str) -> dict:
     return {"comparison": f"{a} - {b}", "elpd_diff": diff.sum(), "se": np.sqrt(len(diff) * diff.var())}
 
 
+def loo_metrics(y: np.ndarray, elpd_i: np.ndarray) -> dict:
+    q = np.clip(np.exp(elpd_i), 1e-12, 1.0 - 1e-12)
+    p = np.where(y == 1, q, 1.0 - q)  # P(y_i = 1 | y_-i)
+    r = rankdata(p)
+    n1 = int(y.sum())
+    n0 = len(y) - n1
+    z = np.log(p / (1.0 - p))
+    nll = lambda b: -np.sum(y * (b[0] + b[1] * z) - np.logaddexp(0.0, b[0] + b[1] * z))
+    a, s = minimize(nll, [0.0, 1.0]).x
+    return {
+        "auc": (r[y == 1].sum() - n1 * (n1 + 1) / 2) / (n1 * n0),
+        "brier": float(np.mean((p - y) ** 2)),
+        "brier_null": float(y.mean() * (1.0 - y.mean())),
+        "cal_intercept": float(a),
+        "cal_slope": float(s),
+    }
+
+
 # 4. Prior sensitivity -------------------------------------------------------
 
 def sensitivity(name: str, df: pd.DataFrame, base, args) -> pd.DataFrame:
@@ -184,6 +204,14 @@ def sensitivity(name: str, df: pd.DataFrame, base, args) -> pd.DataFrame:
     return pd.concat(tables)
 
 
+def sleep_nadir(idata) -> tuple[float, float, float]:
+    post = idata["posterior"]
+    b1 = post["sleep_c"].values.ravel()
+    b2 = post["I(sleep_c ** 2)"].values.ravel()
+    q055, q50, q945 = np.quantile(7.5 - b1 / (2 * b2), [0.055, 0.5, 0.945])
+    return float(q055), float(q50), float(q945)  # hours, 89% interval
+
+
 def evaluate(args) -> None:
     TABLE_DIR.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(SEED)
@@ -192,7 +220,7 @@ def evaluate(args) -> None:
     print(f"Participants: {len(df)}, depressed: {y.sum()} ({y.mean():.1%})")
 
     idatas = {name: fit(name, df, args) for name in MODELS}
-    conv, rates, clusters, loo_rows, elpd_i, loo_results = [], [], [], [], {}, {}
+    conv, rates, clusters, loo_rows, nadir_rows, elpd_i, loo_results = [], [], [], [], [], {}, {}
     for name, idata in idatas.items():
         conv.append(convergence(name, idata))
         rate_table, cluster_stat = ppc(name, df, y, replicate(idata, y, rng))
@@ -211,6 +239,16 @@ def evaluate(args) -> None:
         })
         elpd_i[name] = np.asarray(res.elpd_i).ravel()
 
+        post_vars = idata["posterior"].data_vars
+        if "sleep_c" in post_vars and "I(sleep_c ** 2)" in post_vars:
+            q055, q50, q945 = sleep_nadir(idata)
+            nadir_rows.append({
+                "model": name,
+                "nadir_hours_q50": q50,
+                "nadir_hours_q055": q055,
+                "nadir_hours_q945": q945,
+            })
+
     elpd_i["baseline"] = baseline_elpd(y)
     loo_rows.append({
         "model": "baseline",
@@ -221,16 +259,17 @@ def evaluate(args) -> None:
         "n_pareto_k_gt_0.7": np.nan,
     })
 
+    metrics_rows = [{"model": key, **loo_metrics(y, scores)} for key, scores in elpd_i.items()]
+
     pd.DataFrame(conv).to_csv(TABLE_DIR / "convergence.csv", index=False)
     pd.concat(rates, ignore_index=True).to_csv(TABLE_DIR / "ppc_rates.csv", index=False)
     pd.DataFrame(clusters).to_csv(TABLE_DIR / "ppc_clusters.csv", index=False)
     pd.DataFrame(loo_rows).to_csv(TABLE_DIR / "loo.csv", index=False)
-    model_names = list(MODELS.keys())
-    comparisons = [pairwise(elpd_i, model_names[0], "baseline")] if model_names else []
-    comparisons.extend(
-        pairwise(elpd_i, model_names[i], model_names[i - 1])
-        for i in range(1, len(model_names))
-    )
+    pd.DataFrame(metrics_rows).to_csv(TABLE_DIR / "loo_metrics.csv", index=False)
+    pd.DataFrame(nadir_rows).to_csv(TABLE_DIR / "sleep_nadir.csv", index=False)
+
+    PAIRS = [("M0", "baseline"), ("M1c", "M0"), ("M1c", "M1a"), ("M1c", "M1b"), ("M1b", "M1a"), ("M2", "M1c")]
+    comparisons = [pairwise(elpd_i, a, b) for a, b in PAIRS]
     pd.DataFrame(comparisons).to_csv(TABLE_DIR / "loo_pairwise.csv", index=False)
     az.compare(loo_results).to_csv(TABLE_DIR / "model_comparison.csv")
 
