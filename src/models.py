@@ -29,63 +29,14 @@ MODELS = {
     ),
 }
 
-
+BASE = ("y", "age_z", "gender_female", "income_z")
+HABITS = ("vigorous_act", "sedentary_z", "alcohol_z", "sleep_c", "smoking_former", "smoking_current")
 MODEL_COLUMNS = {
-    "M0": (
-        "y",
-        "age_z",
-        "gender_female",
-        "income_z",
-    ),
-    "M1a": (
-        "y",
-        "age_z",
-        "gender_female",
-        "income_z",
-        "vigorous_act",
-        "sedentary_z",
-        "alcohol_z",
-        "sleep_c",
-        "smoking_former",
-        "smoking_current",
-    ),
-    "M1b": (
-        "y",
-        "age_z",
-        "gender_female",
-        "income_z",
-        "vigorous_act",
-        "sedentary_z",
-        "alcohol_z",
-        "sleep_c",
-        "smoking_former",
-        "smoking_current",
-    ),
-    "M1c": (
-        "y",
-        "age_z",
-        "gender_female",
-        "income_z",
-        "vigorous_act",
-        "sedentary_z",
-        "alcohol_z",
-        "sleep_c",
-        "smoking_former",
-        "smoking_current",
-    ),
-    "M2": (
-        "y",
-        "age_z",
-        "gender_female",
-        "income_z",
-        "vigorous_act",
-        "sedentary_z",
-        "alcohol_z",
-        "sleep_c",
-        "smoking_former",
-        "smoking_current",
-        "stratum_psu",
-    ),
+    "M0": BASE,
+    "M1a": BASE + HABITS,
+    "M1b": BASE + HABITS,
+    "M1c": BASE + HABITS,
+    "M2": BASE + HABITS + ("stratum_psu",)
 }
 
 
@@ -124,12 +75,11 @@ def get_priors(model_name: str):
         "Intercept": bmb.Prior("Normal", mu=-2.2, sigma=0.75),
     }
 
-    if model_name in ("M1", "M2"):
+    formula = MODELS[model_name]
+    if "I(sleep_c ** 2)" in formula:
         priors["I(sleep_c ** 2)"] = bmb.Prior("Normal", mu=0, sigma=0.1)
-    if model_name == "M2":
-        priors["1|stratum_psu"] = bmb.Prior(
-            "Normal", mu=0, sigma=bmb.Prior("Exponential", lam=1)
-        )
+    if "(1 | stratum_psu)" in formula:
+        priors["1|stratum_psu"] = bmb.Prior("Normal", mu=0, sigma=bmb.Prior("Exponential", lam=1))
 
     return priors
 
