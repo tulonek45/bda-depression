@@ -60,6 +60,39 @@ def plot_sensitivity(sens: pd.DataFrame) -> None:
         plt.close(fig)
 
 
+def plot_loo_metrics(metrics: pd.DataFrame) -> None:
+    models = metrics[metrics["model"] != "baseline"].reset_index(drop=True)
+    null_brier = metrics.loc[metrics["model"] == "baseline", "brier_null"].iloc[0]
+
+    fig, axes = plt.subplots(1, 3, figsize=(13, 4), constrained_layout=True)
+    y_pos = np.arange(len(models))[::-1]
+
+    axes[0].plot(models["auc"], y_pos, "o", color="black")
+    axes[0].axvline(0.5, color="0.6", ls="--", lw=1)
+    axes[0].set_yticks(y_pos, models["model"])
+    axes[0].set_xlabel("LOO AUC")
+    axes[0].set_title("Discrimination")
+
+    axes[1].plot(models["brier"], y_pos, "o", color="black")
+    axes[1].axvline(null_brier, color="0.6", ls="--", lw=1, label="null Brier")
+    axes[1].set_yticks(y_pos, models["model"])
+    axes[1].set_xlabel("LOO Brier score")
+    axes[1].set_title("Overall accuracy")
+    axes[1].legend(loc="best")
+
+    axes[2].plot(models["cal_slope"], y_pos, "o", color="black", label="slope")
+    axes[2].plot(models["cal_intercept"], y_pos, "s", color="0.5", label="intercept")
+    axes[2].axvline(1.0, color="0.6", ls="--", lw=1)
+    axes[2].axvline(0.0, color="0.6", ls=":", lw=1)
+    axes[2].set_yticks(y_pos, models["model"])
+    axes[2].set_xlabel("Calibration parameter")
+    axes[2].set_title("Calibration (target: 0 & 1)")
+    axes[2].legend(loc="best")
+
+    fig.savefig(FIGURE_DIR / "loo_metrics.png", dpi=120)
+    plt.close(fig)
+
+
 def plot_evaluation(include_sensitivity: bool = True) -> None:
     FIGURE_DIR.mkdir(parents=True, exist_ok=True)
     rates = pd.read_csv(TABLE_DIR / "ppc_rates.csv")
@@ -75,4 +108,9 @@ def plot_evaluation(include_sensitivity: bool = True) -> None:
     sensitivity_path = TABLE_DIR / "prior_sensitivity.csv"
     if include_sensitivity:
         plot_sensitivity(pd.read_csv(sensitivity_path))
+
+    loo_metrics_path = TABLE_DIR / "loo_metrics.csv"
+    if loo_metrics_path.exists():
+        plot_loo_metrics(pd.read_csv(loo_metrics_path))
+        
     print(f"Figures written to {FIGURE_DIR}/")
