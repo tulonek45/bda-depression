@@ -5,8 +5,17 @@ import bambi as bmb
 MODELS = {
     # baseline model: control
     "M0": "y ~ age_z + gender_female + income_z",
-    # linear + non-linear model: habits + non-linear sleep
-    "M1": (
+    "M1a": (
+        "y ~ age_z + gender_female + income_z "
+        "+ vigorous_act + sedentary_z + alcohol_z "
+        "+ sleep_c + smoking_former + smoking_current"
+    ),
+    "M1b": (
+        "y ~ age_z + gender_female + income_z "
+        "+ vigorous_act + sedentary_z + alcohol_z "
+        "+ I(sleep_c ** 2) + smoking_former + smoking_current"
+    ),
+    "M1c": (
         "y ~ age_z + gender_female + income_z "
         "+ vigorous_act + sedentary_z + alcohol_z "
         "+ sleep_c + I(sleep_c ** 2) + smoking_former + smoking_current"
@@ -28,7 +37,31 @@ MODEL_COLUMNS = {
         "gender_female",
         "income_z",
     ),
-    "M1": (
+    "M1a": (
+        "y",
+        "age_z",
+        "gender_female",
+        "income_z",
+        "vigorous_act",
+        "sedentary_z",
+        "alcohol_z",
+        "sleep_c",
+        "smoking_former",
+        "smoking_current",
+    ),
+    "M1b": (
+        "y",
+        "age_z",
+        "gender_female",
+        "income_z",
+        "vigorous_act",
+        "sedentary_z",
+        "alcohol_z",
+        "sleep_c",
+        "smoking_former",
+        "smoking_current",
+    ),
+    "M1c": (
         "y",
         "age_z",
         "gender_female",
@@ -80,29 +113,6 @@ def prepare_bambi_df(df: pd.DataFrame) -> pd.DataFrame:
         out["stratum_psu"] = out["stratum_psu"].astype(str)
     return out
 
-# helper function to generate synthetic data before the preprocessed data is ready
-def generate_synthetic_covariates(n, seed):
-    rnd = np.random.default_rng(seed)
-
-    smoking = rnd.choice(["never", "former", "current"], size=n, p=[0.6, 0.2, 0.2])
-    # Simulate ~30 unique stratum_psu clusters (15 strata x 2 PSUs)
-    clusters = [f"{s}_{p}" for s in range(173, 188) for p in (1, 2)]
-
-    synthetic_df = pd.DataFrame({
-        "age_z": rnd.normal(0.0, 1.0, size=n),
-        "gender_female": rnd.binomial(1, 0.5, size=n),
-        "income_z": rnd.normal(0.0, 1.0, size=n),
-        "vigorous_act": rnd.binomial(1, 0.45, size=n),
-        "sedentary_z": rnd.normal(0.0, 1.0, size=n),
-        "alcohol_z": np.clip(rnd.normal(0.0, 1.0, size=n), -0.8, 4.0),
-        "sleep_c": np.clip(rnd.normal(0.0, 1.4, size=n), -4.5, 5.5),
-        "smoking_former": (smoking == "former").astype(int),
-        "smoking_current": (smoking == "current").astype(int),
-        "stratum_psu": rnd.choice(clusters, size=n),
-        "y": rnd.integers(0, 2, size=n),
-    })
-    
-    return prepare_bambi_df(synthetic_df)
 
 # generate priors
 def get_priors(model_name: str):
