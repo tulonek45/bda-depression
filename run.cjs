@@ -4,7 +4,7 @@ const path = require('path');
 
 const SCRIPTS = {
   download_data: 'scripts.download_data',
-  analyze: 'src.analysis',
+  analyze: 'scripts.analyze',
   prior_checks: 'scripts.prior_checks',
   evaluate: 'scripts.evaluate',
 };
