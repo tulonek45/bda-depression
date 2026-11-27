@@ -18,15 +18,16 @@ npm run analyze
 The commands create a local `.venv` and install the packages in
 `requirements.txt` if needed. Downloads are saved to the directory specified in
 dataset_config.yml; files that already exist are not downloaded again.
-`npm run analyze` preprocesses the configured NHANES files and fits M0–M2 on
-adult complete cases. It prints posterior summaries, divergence counts, and a
-PSIS-LOO model comparison.
+`npm run analyze` runs `scripts/analyze.py`, which preprocesses the configured
+NHANES files and fits M0–M2 on adult complete cases. It prints posterior
+summaries, divergence counts, and a PSIS-LOO model comparison.
 
 ### Configuration and development
 
 Edit `dataset_config.yml` to change the data URL, dataset files, selected
-attributes, missing-value codes, or depression cutoffs. The download and
-analysis commands are defined in `package.json` and dispatched by `run.cjs`.
+attributes, missing-value codes, or depression cutoffs. The npm commands are
+defined in `package.json` and dispatched by `run.cjs`; analysis entry-point
+logic lives in `scripts/`.
 
 After changing Python dependencies in `requirements.txt`, just run either npm
 command normally to automatically update the virtual environment. To start
@@ -41,9 +42,10 @@ npm run prior-checks
 ```
 
 This compiles `M0`–`M2`, saves prior density plots to
-`outputs/preliz_prior_predictive.png`, and prints the implied prior prevalence
-`P(y = 1)`. It uses synthetic covariates for prior checks; `npm run analyze`
-fits the models to the preprocessed NHANES data.
+`figures/preliz_prior_predictive.png`, and prints the implied prior prevalence
+`P(y = 1)`. It uses the configured NHANES data and the same preprocessed adult
+complete-case model frame as the analysis. Run `npm run download` first if the
+configured data files are not already present.
 
 ### Modeling Interface & Data Contract (`src/models.py`)
 
@@ -74,16 +76,31 @@ The models currently do not apply NHANES sample weights; their posterior
 summaries and model comparisons should not be interpreted as population-
 representative estimates.
 
-### Running model evaluation and evaluation plotting 
+### Running model evaluation
 
 From the repository root:
 
 ```bash
 npm run evaluate
-npm run plot-evaluation
 ```
 
-The evaluation of the models is done in two parts. First part runs the model evaluation and the second part creates plots of the evaluation. 
+The command evaluates the models, generates plots in `figures/evaluation/`,
+and writes tables and `summary.md` under `outputs/evaluation/`. Figures are
+not gitignored; tables, the report, and cached model fits are.
+
+Fits are reused from `outputs/evaluation/idata/` unless `--refit` is specified.
+Use `--refit` after changing the data or models. Sampling options and the
+optional sensitivity analysis can be controlled, for example:
+
+```bash
+npm run evaluate -- --refit
+npm run evaluate -- --skip-sensitivity
+npm run evaluate -- --draws 300 --tune 300 --chains 4 --cores 1
+```
+
+`--skip-sensitivity` excludes sensitivity results from the new report and
+does not regenerate sensitivity plots. Older sensitivity tables and figures
+remain on disk and may no longer correspond to the current run.
 
 #### What is evaluated
 
@@ -101,4 +118,3 @@ The evaluation of the models is done in two parts. First part runs the model eva
    value?) and M2 vs M1 (do survey clusters add predictive value?).
 4. **Prior sensitivity:** M1 and M2 are refit with every prior scale multiplied
    by 0.5 and 2, and the posterior means are compared.
-
