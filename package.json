@@ -4,6 +4,9 @@
   "scripts": {
     "download": "node run.cjs download_data",
     "analyze": "node run.cjs analyze",
-    "prior-checks": "node run.cjs prior_checks"
+    "prior-checks": "node run.cjs prior_checks",
+    "evaluate": "node run.cjs evaluate",
+    "plot-evaluation": "node run.cjs plot_evaluation",
+    "report-evaluation": "node run.cjs report_evaluation"
   }
 }
