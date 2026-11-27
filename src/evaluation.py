@@ -21,7 +21,7 @@ from src.models import MODELS, get_priors, prepare_bambi_df
 SEED = 42
 PPC_DRAWS = 1000
 PRIOR_SCALES = (0.5, 2.0)
-SENSITIVITY_MODELS = ("M1", "M2")
+SENSITIVITY_MODELS = list(MODELS.keys() - {"M0"})  # set difference on dict_keys works in Python 3
 
 
 def load_data() -> pd.DataFrame:
@@ -192,28 +192,50 @@ def evaluate(args) -> None:
     print(f"Participants: {len(df)}, depressed: {y.sum()} ({y.mean():.1%})")
 
     idatas = {name: fit(name, df, args) for name in MODELS}
-    conv, rates, clusters, loo_rows, elpd = [], [], [], [], {}
+    conv, rates, clusters, loo_rows, elpd_i, loo_results = [], [], [], [], {}, {}
     for name, idata in idatas.items():
         conv.append(convergence(name, idata))
         rate_table, cluster_stat = ppc(name, df, y, replicate(idata, y, rng))
         rates.append(rate_table)
         clusters.append(cluster_stat)
-        row, elpd[name] = loo(name, idata)
-        loo_rows.append(row)
+        res = az.loo(idata, pointwise=True)
+        loo_results[name] = res
+        k = np.asarray(res.pareto_k).ravel()
+        loo_rows.append({
+            "model": name,
+            "elpd_loo": res.elpd,
+            "se": res.se,
+            "p_loo": res.p,
+            "max_pareto_k": k.max(),
+            "n_pareto_k_gt_0.7": int((k > 0.7).sum()),
+        })
+        elpd_i[name] = np.asarray(res.elpd_i).ravel()
 
-    elpd["baseline"] = baseline_elpd(y)
-    loo_rows.append({"model": "baseline", "elpd_loo": elpd["baseline"].sum()})
+    elpd_i["baseline"] = baseline_elpd(y)
+    loo_rows.append({
+        "model": "baseline",
+        "elpd_loo": elpd_i["baseline"].sum(),
+        "se": np.nan,
+        "p_loo": np.nan,
+        "max_pareto_k": np.nan,
+        "n_pareto_k_gt_0.7": np.nan,
+    })
 
     pd.DataFrame(conv).to_csv(TABLE_DIR / "convergence.csv", index=False)
-    pd.concat(rates).to_csv(TABLE_DIR / "ppc_rates.csv", index=False)
+    pd.concat(rates, ignore_index=True).to_csv(TABLE_DIR / "ppc_rates.csv", index=False)
     pd.DataFrame(clusters).to_csv(TABLE_DIR / "ppc_clusters.csv", index=False)
     pd.DataFrame(loo_rows).to_csv(TABLE_DIR / "loo.csv", index=False)
-    pd.DataFrame([pairwise(elpd, "M0", "baseline"), pairwise(elpd, "M1", "M0"),
-                  pairwise(elpd, "M2", "M1")]).to_csv(TABLE_DIR / "loo_pairwise.csv", index=False)
-    az.compare(idatas).to_csv(TABLE_DIR / "model_comparison.csv")
+    model_names = list(MODELS.keys())
+    comparisons = [pairwise(elpd_i, model_names[0], "baseline")] if model_names else []
+    comparisons.extend(
+        pairwise(elpd_i, model_names[i], model_names[i - 1])
+        for i in range(1, len(model_names))
+    )
+    pd.DataFrame(comparisons).to_csv(TABLE_DIR / "loo_pairwise.csv", index=False)
+    az.compare(loo_results).to_csv(TABLE_DIR / "model_comparison.csv")
 
-    if not args.skip_sensitivity:
+    if not args.skip_sensitivity and SENSITIVITY_MODELS:
         sens = [sensitivity(name, df, idatas[name], args) for name in SENSITIVITY_MODELS]
-        pd.concat(sens).to_csv(TABLE_DIR / "prior_sensitivity.csv", index=False)
+        pd.concat(sens, ignore_index=True).to_csv(TABLE_DIR / "prior_sensitivity.csv", index=False)
 
     print(f"Tables written to {TABLE_DIR}/")
